@@ -10,6 +10,11 @@ public class DrawLine : MonoBehaviour {
 
 	private int speed = 0;
 	LineRenderer lRend;
+
+	HashSet<LineRenderer> crossLineHash;
+
+	HashSet<LineRenderer> measureLineHash;
+
 	// Use this for initialization
 	void Start () {
 		lRend = gameObject.GetComponent<LineRenderer> ();
@@ -19,8 +24,40 @@ public class DrawLine : MonoBehaviour {
 		lRend.SetPosition (0, startVec);
 		lRend.SetPosition (1, endVec);
 
+		Input.compass.enabled = true;
+		Input.location.Start();
+
+		crossLineHash = createLineRenderHash("CrossLine", 4);
+		measureLineHash = createMeasureLineHash("MeasureLine", 360);
 		drawStaticCircles();
 		drawCompassLines();
+
+	}
+
+	private HashSet<LineRenderer> createLineRenderHash(string lineName, int lineNum) {
+		HashSet<LineRenderer> hash = new HashSet<LineRenderer>();
+		for (int i = 0; i < lineNum; i++) {
+			string name = lineName + i;
+			LineRenderer line = createLineRenderer(name, .02f);
+			hash.Add(line);
+		}
+
+		return hash;
+	}
+
+	private HashSet<LineRenderer> createMeasureLineHash(string lineName, int lineNum) {
+		HashSet<LineRenderer> hash = new HashSet<LineRenderer>();
+		for (int i = 0; i < lineNum; i++) {
+			float radius = RADIUS / STATIC_CIRCLE_NUM * i;
+			float rOffset = i % 10 == 0 ? -0.1f : 0.0f;
+			float widthOffset = i % 10 == 0 ? .01f : 0.0f;
+
+			string name = lineName + i;
+			LineRenderer line = createLineRenderer(name, .01f, widthOffset);
+			hash.Add(line);
+		}
+
+		return hash;
 	}
 
 	private void drawStaticCircles() {
@@ -52,30 +89,39 @@ public class DrawLine : MonoBehaviour {
 
 	private void drawCompassLines() {
 		// NOTE: 十字線を描画
-		for (int i = 0; i < 4; i++) {
-			string name = "CrossLine" + i;
-			LineRenderer line = createLineRenderer(name, .02f);
-			float rad = Mathf.Deg2Rad * (i * 90);
+		int j = 0;
+		float rotateAngle = 0.0f;
+
+#if UNITY_IOS && !UNITY_EDITOR
+	rotateAngle = Input.compass.trueHeading;
+	Debug.Log("rotate angle is " + rotateAngle);
+#endif
+
+		foreach (LineRenderer line in crossLineHash) {
+			float rad = Mathf.Deg2Rad * (j * 90 + rotateAngle);
 			float posX = Mathf.Cos(rad) * RADIUS;
 			float posY = Mathf.Sin(rad) * RADIUS;
 			drawLine(line, 0.0f, 0.0f, posX, posY);
+			j++;
 		}
 
 		// NOTE: 外周のメモリを描画
 		int step = 1;
-		for (int i = 0; i < 360; i += step) {
-			float radius = RADIUS / STATIC_CIRCLE_NUM * i;
-			float rOffset = i % 10 == 0 ? -0.1f : 0.0f;
-			float widthOffset = i % 10 == 0 ? .01f : 0.0f;
+		j = 0;
+		foreach (LineRenderer line in measureLineHash) {
+			float radius = RADIUS / STATIC_CIRCLE_NUM * j;
+			float rOffset = j % 10 == 0 ? -0.1f : 0.0f;
+			float widthOffset = j % 10 == 0 ? .01f : 0.0f;
 
-			string name = "MeasureLine" + i;
-			LineRenderer line = createLineRenderer(name, .01f, widthOffset);
-			float rad = Mathf.Deg2Rad * i;
+			string name = "MeasureLine" + j;
+			float rad = Mathf.Deg2Rad * j;
 			float posSX = Mathf.Cos(rad) * (MIDDLE_RADIUS + rOffset);
 			float posSY = Mathf.Sin(rad) * (MIDDLE_RADIUS + rOffset);;
 			float posX = Mathf.Cos(rad) * RADIUS;
 			float posY = Mathf.Sin(rad) * RADIUS;
 			drawLine(line, posSX, posSY, posX, posY);
+
+			j += step;
 		}
 	}
 
@@ -107,6 +153,8 @@ public class DrawLine : MonoBehaviour {
 		Vector3 endVec = new Vector3 (posX, posY, 0.0f);
 		lRend.SetPosition (0, startVec);
 		lRend.SetPosition (1, endVec);
+
+		drawCompassLines();
 		speed++;
 	}
 }
