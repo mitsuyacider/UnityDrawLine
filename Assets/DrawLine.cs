@@ -105,7 +105,7 @@ public class DrawLine : MonoBehaviour {
 		RectTransform canvasRect = canvas.GetComponent<RectTransform> ();
 		pos.x += canvasRect.transform.position.x;
 		pos.y += canvasRect.transform.position.y;
-		return new Vector3(pos.x, pos.y, canvasRect.transform.position.z);
+		return new Vector3(pos.x, pos.y, canvasRect.transform.position.z - 10.0f);
 	}
 
 	private void drawCompassLines() {
